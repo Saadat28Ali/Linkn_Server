@@ -1,11 +1,15 @@
 // Module imports -------------------------------
-import express from "express";
+import express, { Request, Response } from "express";
 import "dotenv/config";
 import { MongoClient, ServerApiVersion } from "mongodb";
 import bodyParser from "body-parser";
 // ----------------------------------------------
 
-const mongoClient = new MongoClient(process.env.DB_URI, {
+const DB_URI = (process.env.DB_URI) ? process.env.DB_URI : "";
+const DB_NAME = (process.env.DB_NAME) ? process.env.DB_NAME : "";
+const COLLECTION_NAME = (process.env.COLLECTION_NAME) ? process.env.COLLECTION_NAME : "";
+
+const mongoClient = new MongoClient(DB_URI , {
     serverApi: {
         version: ServerApiVersion.v1, 
         strict: true, 
@@ -22,7 +26,7 @@ const RESPONSES = {
     UNKNOWN_ERROR: "We have run into an unknown error.", 
 }
 
-async function writeUserData(username, password, data) {
+async function writeUserData(username: string, password: string, data: string) {
     // Returns ----------------------------------
     // 0: new user data added
     // 1: null params found
@@ -36,7 +40,7 @@ async function writeUserData(username, password, data) {
         try {
             await mongoClient.connect();
 
-            await mongoClient.db(process.env.DB_NAME).collection(process.env.COLLECTION_NAME).insertOne(
+            await mongoClient.db(process.env.DB_NAME).collection(COLLECTION_NAME).insertOne(
                 {
                     username: username, 
                     password: password, 
@@ -51,7 +55,7 @@ async function writeUserData(username, password, data) {
     }
 }
 
-async function readUserData(username) {
+async function readUserData(username: string) {
     // Returns ----------------------------------
     // Document if found
     // 1 if not found
@@ -59,14 +63,14 @@ async function readUserData(username) {
     try {
         await mongoClient.connect();
 
-        const foundDocument = await mongoClient.db(process.env.DB_NAME).collection(process.env.COLLECTION_NAME).findOne({ username: username }, { projection: { _id: 0} });
+        const foundDocument = await mongoClient.db(process.env.DB_NAME).collection(COLLECTION_NAME).findOne({ username: username }, { projection: { _id: 0} });
         return ((foundDocument !== null) ? foundDocument : 1);
     } finally {
         await mongoClient.close();
     }
 }
 
-async function updateUserData(username, password, data) {
+async function updateUserData(username: string, password: string, data: string) {
     // Returns ----------------------------------
     // 0: if updated successfully
     // 1: if null params are passed
@@ -79,7 +83,7 @@ async function updateUserData(username, password, data) {
     if (await readUserData(username) !== 1) {
         try {
             await mongoClient.connect();
-            await mongoClient.db(process.env.DB_NAME).collection(process.env.COLLECTION_NAME).updateOne({ username: username }, { $set: { password: password, data: data } });
+            await mongoClient.db(process.env.DB_NAME).collection(COLLECTION_NAME).updateOne({ username: username }, { $set: { password: password, data: data } });
             return 0;
         } finally {
             await mongoClient.close();
@@ -87,7 +91,7 @@ async function updateUserData(username, password, data) {
     } else return 2;
 }
 
-async function deleteUserData(username) {
+async function deleteUserData(username: string) {
     // Return -----------------------------------
     // 0: if user is successfully deleted
     // 1: if user does not exist
@@ -95,7 +99,7 @@ async function deleteUserData(username) {
     if (await readUserData(username) !== 1) {
         try {
             await mongoClient.connect();
-            await mongoClient.db(process.env.DB_NAME).collection(process.env.COLLECTION_NAME).deleteOne({ username: username });
+            await mongoClient.db(process.env.DB_NAME).collection(COLLECTION_NAME).deleteOne({ username: username });
             return 0;
         } finally {
             await mongoClient.close();
@@ -107,7 +111,7 @@ async function deleteUserData(username) {
 
 const app = express();
 
-app.post("/", bodyParser.json(), (request, response) => {
+app.post("/", bodyParser.json(), (request: Request, response: Response) => {
 
     const action = request.body.action;
     const username = request.body.uname;
@@ -156,7 +160,7 @@ app.post("/", bodyParser.json(), (request, response) => {
             }
         })
     }
-    else response.status(200).send(RESPONSES.invalidAction);
+    else response.status(200).send(RESPONSES.INVALID_ACTION);
 });
 
 app.get("/", (request, response) => {
