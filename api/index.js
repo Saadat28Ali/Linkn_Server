@@ -3,6 +3,11 @@ import express from "express";
 import "dotenv/config";
 import { MongoClient, ServerApiVersion } from "mongodb";
 import bodyParser from "body-parser";
+
+// Custom module imports ------------------------
+import { readUserData, writeUserData, updateUserData, deleteUserData } from "./users/usersCrud.js";
+import { readUserlinks, writeUserlinks, updateUserlinks, deleteUserlinks } from "./userlinks/userlinksCrud.js";
+
 // ----------------------------------------------
 
 const mongoClient = new MongoClient(process.env.DB_URI, {
@@ -14,155 +19,160 @@ const mongoClient = new MongoClient(process.env.DB_URI, {
 });
 
 const RESPONSES = {
-    INVALID_ACTION: "Invalid action: The action specified is invalid, it must be a CRUD operaiton.", 
+    INVALID_COLLECTION: "Invalid collection: The collection specified does not exist in the database.", 
+    INVALID_ACTION: "Invalid action: The action specified is invalid, it must be one of { read, write, update, delete }.", 
     USER_NOT_FOUND: "Action could not be completed, user with provided details was not found.", 
     ACTION_COMPLETED: "Action completed successfully.", 
     USER_FOUND: "Action could not be completed, user with provided details already present.", 
     NULL_PARAMS: "Action could not be completed, null or undefined parameters were found.", 
     UNKNOWN_ERROR: "We have run into an unknown error.", 
-}
+};
 
-async function writeUserData(username, password, data) {
-    // Returns ----------------------------------
-    // 0: new user data added
-    // 1: null params found
-    // 2: user already exists
-
-    if (username === undefined || username === null) return 1;
-    if (password === undefined || password === null) return 1;
-    if (data === undefined || data === null) return 1;
-
-    if (await readUserData(username) === 1) {
-        try {
-            await mongoClient.connect();
-
-            await mongoClient.db(process.env.DB_NAME).collection(process.env.COLLECTION_NAME).insertOne(
-                {
-                    username: username, 
-                    password: password, 
-                    data: data
-                }
-            );
-        } finally {
-            return 0;
-        }
-    } else {
-        return 2;
-    }
-}
-
-async function readUserData(username) {
-    // Returns ----------------------------------
-    // Document if found
-    // 1 if not found
-
-    try {
-        await mongoClient.connect();
-
-        const foundDocument = await mongoClient.db(process.env.DB_NAME).collection(process.env.COLLECTION_NAME).findOne({ username: username }, { projection: { _id: 0} });
-        return ((foundDocument !== null) ? foundDocument : 1);
-    } finally {
-        await mongoClient.close();
-    }
-}
-
-async function updateUserData(username, password, data) {
-    // Returns ----------------------------------
-    // 0: if updated successfully
-    // 1: if null params are passed
-    // 2: user does not exist
-    
-    if (username === undefined || username === null) return 1;
-    if (password === undefined || password === null) return 1;
-    if (data === undefined || data === null) return 1;
-
-    if (await readUserData(username) !== 1) {
-        try {
-            await mongoClient.connect();
-            await mongoClient.db(process.env.DB_NAME).collection(process.env.COLLECTION_NAME).updateOne({ username: username }, { $set: { password: password, data: data } });
-            return 0;
-        } finally {
-            await mongoClient.close();
-        }
-    } else return 2;
-}
-
-async function deleteUserData(username) {
-    // Return -----------------------------------
-    // 0: if user is successfully deleted
-    // 1: if user does not exist
-
-    if (await readUserData(username) !== 1) {
-        try {
-            await mongoClient.connect();
-            await mongoClient.db(process.env.DB_NAME).collection(process.env.COLLECTION_NAME).deleteOne({ username: username });
-            return 0;
-        } finally {
-            await mongoClient.close();
-        }
-    } else {
-        return 1;
-    }
-}
+const ICONS = {
+    instagram: "./assets/instagram.png", 
+    twitter: "./assets/twitter.png", 
+    youtube: "./assets/youtube.png", 
+};
 
 const app = express();
 
+app.use(express.static("public"));
+
 app.post("/", bodyParser.json(), (request, response) => {
 
+    const collection = request.body.collection;
     const action = request.body.action;
     const username = request.body.uname;
     const password = request.body.pwd;
     const data = request.body.data;
+    const lightMode = request.body.lightMode;
+    const socialLinks = request.body.socialLinks;
+    const links = request.body.links;
 
-    if (action === "read") {
-        readUserData(username).then((
-            foundDocument
-        ) => {
-            if (foundDocument === 1) response.status(200).send(RESPONSES.USER_NOT_FOUND);
-            else {
-                response.status(200).json(foundDocument);
-            }
-        });
-    } else if (action === "write") {
-        writeUserData(username, password, data).then((
-            writtenResult            
-        ) => {
-            switch (writtenResult) {
-                case 0: response.status(200).send(RESPONSES.ACTION_COMPLETED); break;
-                case 1: response.status(200).send(RESPONSES.NULL_PARAMS); break;
-                case 2: response.status(200).send(RESPONSES.USER_FOUND); break;
-                default: response.status(200).send(RESPONSES.UNKNOWN_ERROR); break;
-            }
-        });
-    } else if (action === "update") {
-        updateUserData(username, password, data).then((
-            updateResult
-        ) => {
-            switch (updateResult) {
-                case 0: response.status(200).send(RESPONSES.ACTION_COMPLETED); break;
-                case 1: response.status(200).send(RESPONSES.NULL_PARAMS); break;
-                case 2: response.status(200).send(RESPONSES.USER_NOT_FOUND); break;
-                default: response.status(200).send(RESPONSES.UNKNOWN_ERROR); break;
-            }
-        });
-    } else if (action === "delete") {
-        deleteUserData(username).then((
-            deleteResult
-        ) => {
-            switch (deleteResult) {
-                case 0: response.status(200).send(RESPONSES.ACTION_COMPLETED); break;
-                case 1: response.status(200).send(RESPONSES.USER_NOT_FOUND); break;
-                default: response.status(200).send(RESPONSES.UNKNOWN_ERROR); break;
-            }
-        })
-    }
-    else response.status(200).send(RESPONSES.invalidAction);
+    if (collection === "users") {
+
+        if (action === "read") {
+
+            readUserData(mongoClient, username).then((
+                foundDocument
+            ) => {
+
+                if (foundDocument === 1) response.status(200).send(RESPONSES.USER_NOT_FOUND);
+                else response.status(200).json(foundDocument);
+
+            });
+
+        } else if (action === "write") {
+
+            writeUserData(mongoClient, username, password, data).then((
+                writtenResult            
+            ) => {
+
+                switch (writtenResult) {
+                    case 0: response.status(200).send(RESPONSES.ACTION_COMPLETED); break;
+                    case 1: response.status(200).send(RESPONSES.NULL_PARAMS); break;
+                    case 2: response.status(200).send(RESPONSES.USER_FOUND); break;
+                    default: response.status(200).send(RESPONSES.UNKNOWN_ERROR); break;
+                }
+
+            });
+
+        } else if (action === "update") {
+
+            updateUserData(mongoClient, username, password, data).then((
+                updateResult
+            ) => {
+
+                switch (updateResult) {
+                    case 0: response.status(200).send(RESPONSES.ACTION_COMPLETED); break;
+                    case 1: response.status(200).send(RESPONSES.NULL_PARAMS); break;
+                    case 2: response.status(200).send(RESPONSES.USER_NOT_FOUND); break;
+                    default: response.status(200).send(RESPONSES.UNKNOWN_ERROR); break;
+                }
+
+            });
+
+        } else if (action === "delete") {
+
+            deleteUserData(mongoClient, username).then((
+                deleteResult
+            ) => {
+
+                switch (deleteResult) {
+                    case 0: response.status(200).send(RESPONSES.ACTION_COMPLETED); break;
+                    case 1: response.status(200).send(RESPONSES.USER_NOT_FOUND); break;
+                    default: response.status(200).send(RESPONSES.UNKNOWN_ERROR); break;
+                }
+
+            });
+
+        }
+        else response.status(200).send(RESPONSES.INVALID_ACTION);
+
+    } else if (collection === "userlinks") {
+
+        if (action === "read") {
+
+            readUserlinks(mongoClient, username).then((
+                foundLinks
+            ) => {
+
+                if (foundLinks === 1) response.status(200).send(RESPONSES.USER_NOT_FOUND);
+                else response.status(200).json(foundLinks);
+
+            });
+
+        } else if (action === "write") {
+
+            writeUserlinks(mongoClient, username).then((
+                writtenLinksResult
+            ) => {
+
+                switch (writtenLinksResult) {
+                    case 0: response.status(200).send(RESPONSES.ACTION_COMPLETED); break;
+                    case 1: response.status(200).send(RESPONSES.NULL_PARAMS); break;
+                    case 2: response.status(200).send(RESPONSES.USER_FOUND); break;
+                    default: response.status(200).send(RESPONSES.UNKNOWN_ERROR); break;
+                }
+
+            });
+        
+        } else if (action === "update") {
+
+            updateUserlinks(mongoClient, username, lightMode, socialLinks, links).then((
+                updateLinksResult
+            ) => {
+
+                switch (updateLinksResult) {
+                    case 0: response.status(200).send(RESPONSES.ACTION_COMPLETED); break;
+                    case 1: response.status(200).send(RESPONSES.NULL_PARAMS); break;
+                    case 2: response.status(200).send(RESPONSES.USER_NOT_FOUND); break;
+                    default: response.status(200).send(RESPONSES.UNKNOWN_ERROR); break;
+                }
+
+            });
+
+        } else if (action === "delete") {
+            deleteUserlinks(mongoClient, username).then((
+                deleteLinksResult
+            ) => {
+                switch (deleteLinksResult) {
+                    case 0: response.status(200).send(RESPONSES.ACTION_COMPLETED); break;
+                    case 1: response.status(200).send(RESPONSES.USER_NOT_FOUND); break;
+                }
+            })
+        }
+        else response.status(200).send(RESPONSES.INVALID_ACTION);
+
+    } else response.status(200).send(RESPONSES.INVALID_COLLECTION);
+
 });
 
 app.get("/", (request, response) => {
 
     response.send("The server is working");
-})
+});
+
 
 app.listen(process.env.LISTENING_PORT, () => {
     console.log("Server started. Listening on port: ", process.env.LISTENING_PORT);
