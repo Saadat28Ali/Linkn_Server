@@ -7,6 +7,7 @@ import bodyParser from "body-parser";
 // Custom module imports ------------------------
 import { readUserData, writeUserData, updateUserData, deleteUserData } from "./users/usersCrud.js";
 import { readUserlinks, writeUserlinks, updateUserlinks, deleteUserlinks } from "./userlinks/userlinksCrud.js";
+import { createToken, findToken, updateToken } from "./sessiontokens/sessiontokens.js";
 
 // ----------------------------------------------
 
@@ -40,131 +41,163 @@ app.use(express.static("public"));
 
 app.post("/", bodyParser.json(), (request, response) => {
 
-    const collection = request.body.collection;
     const action = request.body.action;
+    const collection = request.body.collection;
     const username = request.body.uname;
     const password = request.body.pwd;
     const data = request.body.data;
     const lightMode = request.body.lightMode;
     const socialLinks = request.body.socialLinks;
     const links = request.body.links;
+    const ip = request.body.ip;
+    
+    const sessiontoken = request.body.token;
 
-    if (collection === "users") {
+    if (action === "requesttoken") {
+        createToken(mongoClient, username, ip).then(
+            (tokenCreatedResult) => {
+                if (tokenCreatedResult === 1) response.status(200).send(RESPONSES.NULL_PARAMS);
+                else if (tokenCreatedResult === 2) response.status(200).send(RESPONSES.USER_FOUND);
+                else response.status(200).send(tokenCreatedResult);
+            }
+        );
+    } else if (action === "findtoken") {
+        findToken(mongoClient, username).then(
+            (tokenFoundResult) => {
+                    if (tokenFoundResult === 1) response.status(200).send(RESPONSES.NULL_PARAMS);
+                    else if (tokenFoundResult === 2) response.status(200).send(RESPONSES.USER_NOT_FOUND);
+                    else {
+                        response.status(200).send(tokenFoundResult);
+                    }
+            }
+        );
+    } else if (action === "updatetoken") {
+        updateToken(mongoClient, username, ip).then(
+            (tokenUpdatedResult) => {
+                if (tokenUpdatedResult === 1) response.status(200).send(RESPONSES.NULL_PARAMS);
+                else if (tokenUpdatedResult === 2) response.status(200).send(RESPONSES.USER_NOT_FOUND);
+                else response.status(200).send(RESPONSES.ACTION_COMPLETED);
+            }
+        );
+    } else {
+        if (collection === "users") {
 
-        if (action === "read") {
+            if (action === "read") {
+    
+                readUserData(mongoClient, username).then((
+                    foundDocument
+                ) => {
+    
+                    if (foundDocument === 1) response.status(200).send(RESPONSES.USER_NOT_FOUND);
+                    else response.status(200).json(foundDocument);
+    
+                });
+    
+            } else if (action === "write") {
+    
+                writeUserData(mongoClient, username, password, data).then((
+                    writtenResult            
+                ) => {
+    
+                    switch (writtenResult) {
+                        case 0: response.status(200).send(RESPONSES.ACTION_COMPLETED); break;
+                        case 1: response.status(200).send(RESPONSES.NULL_PARAMS); break;
+                        case 2: response.status(200).send(RESPONSES.USER_FOUND); break;
+                        default: response.status(200).send(RESPONSES.UNKNOWN_ERROR); break;
+                    }
+    
+                });
+    
+            } else if (action === "update") {
+    
+                updateUserData(mongoClient, username, password, data).then((
+                    updateResult
+                ) => {
+    
+                    switch (updateResult) {
+                        case 0: response.status(200).send(RESPONSES.ACTION_COMPLETED); break;
+                        case 1: response.status(200).send(RESPONSES.NULL_PARAMS); break;
+                        case 2: response.status(200).send(RESPONSES.USER_NOT_FOUND); break;
+                        default: response.status(200).send(RESPONSES.UNKNOWN_ERROR); break;
+                    }
+    
+                });
+    
+            } else if (action === "delete") {
+    
+                deleteUserData(mongoClient, username).then((
+                    deleteResult
+                ) => {
+    
+                    switch (deleteResult) {
+                        case 0: response.status(200).send(RESPONSES.ACTION_COMPLETED); break;
+                        case 1: response.status(200).send(RESPONSES.USER_NOT_FOUND); break;
+                        default: response.status(200).send(RESPONSES.UNKNOWN_ERROR); break;
+                    }
+    
+                });
+    
+            }
+            else response.status(200).send(RESPONSES.INVALID_ACTION);
+    
+        } else if (collection === "userlinks") {
+    
+            if (action === "read") {
+    
+                readUserlinks(mongoClient, username).then((
+                    foundLinks
+                ) => {
+    
+                    if (foundLinks === 1) response.status(200).send(RESPONSES.USER_NOT_FOUND);
+                    else response.status(200).json(foundLinks);
+    
+                });
+    
+            } else if (action === "write") {
+    
+                writeUserlinks(mongoClient, username).then((
+                    writtenLinksResult
+                ) => {
+    
+                    switch (writtenLinksResult) {
+                        case 0: response.status(200).send(RESPONSES.ACTION_COMPLETED); break;
+                        case 1: response.status(200).send(RESPONSES.NULL_PARAMS); break;
+                        case 2: response.status(200).send(RESPONSES.USER_FOUND); break;
+                        default: response.status(200).send(RESPONSES.UNKNOWN_ERROR); break;
+                    }
+    
+                });
+            
+            } else if (action === "update") {
+    
+                updateUserlinks(mongoClient, username, lightMode, socialLinks, links).then((
+                    updateLinksResult
+                ) => {
+    
+                    switch (updateLinksResult) {
+                        case 0: response.status(200).send(RESPONSES.ACTION_COMPLETED); break;
+                        case 1: response.status(200).send(RESPONSES.NULL_PARAMS); break;
+                        case 2: response.status(200).send(RESPONSES.USER_NOT_FOUND); break;
+                        default: response.status(200).send(RESPONSES.UNKNOWN_ERROR); break;
+                    }
+    
+                });
+    
+            } else if (action === "delete") {
+                deleteUserlinks(mongoClient, username).then((
+                    deleteLinksResult
+                ) => {
+                    switch (deleteLinksResult) {
+                        case 0: response.status(200).send(RESPONSES.ACTION_COMPLETED); break;
+                        case 1: response.status(200).send(RESPONSES.USER_NOT_FOUND); break;
+                    }
+                })
+            }
+            else response.status(200).send(RESPONSES.INVALID_ACTION);
+    
+        } else response.status(200).send(RESPONSES.INVALID_COLLECTION);
+    }
 
-            readUserData(mongoClient, username).then((
-                foundDocument
-            ) => {
-
-                if (foundDocument === 1) response.status(200).send(RESPONSES.USER_NOT_FOUND);
-                else response.status(200).json(foundDocument);
-
-            });
-
-        } else if (action === "write") {
-
-            writeUserData(mongoClient, username, password, data).then((
-                writtenResult            
-            ) => {
-
-                switch (writtenResult) {
-                    case 0: response.status(200).send(RESPONSES.ACTION_COMPLETED); break;
-                    case 1: response.status(200).send(RESPONSES.NULL_PARAMS); break;
-                    case 2: response.status(200).send(RESPONSES.USER_FOUND); break;
-                    default: response.status(200).send(RESPONSES.UNKNOWN_ERROR); break;
-                }
-
-            });
-
-        } else if (action === "update") {
-
-            updateUserData(mongoClient, username, password, data).then((
-                updateResult
-            ) => {
-
-                switch (updateResult) {
-                    case 0: response.status(200).send(RESPONSES.ACTION_COMPLETED); break;
-                    case 1: response.status(200).send(RESPONSES.NULL_PARAMS); break;
-                    case 2: response.status(200).send(RESPONSES.USER_NOT_FOUND); break;
-                    default: response.status(200).send(RESPONSES.UNKNOWN_ERROR); break;
-                }
-
-            });
-
-        } else if (action === "delete") {
-
-            deleteUserData(mongoClient, username).then((
-                deleteResult
-            ) => {
-
-                switch (deleteResult) {
-                    case 0: response.status(200).send(RESPONSES.ACTION_COMPLETED); break;
-                    case 1: response.status(200).send(RESPONSES.USER_NOT_FOUND); break;
-                    default: response.status(200).send(RESPONSES.UNKNOWN_ERROR); break;
-                }
-
-            });
-
-        }
-        else response.status(200).send(RESPONSES.INVALID_ACTION);
-
-    } else if (collection === "userlinks") {
-
-        if (action === "read") {
-
-            readUserlinks(mongoClient, username).then((
-                foundLinks
-            ) => {
-
-                if (foundLinks === 1) response.status(200).send(RESPONSES.USER_NOT_FOUND);
-                else response.status(200).json(foundLinks);
-
-            });
-
-        } else if (action === "write") {
-
-            writeUserlinks(mongoClient, username).then((
-                writtenLinksResult
-            ) => {
-
-                switch (writtenLinksResult) {
-                    case 0: response.status(200).send(RESPONSES.ACTION_COMPLETED); break;
-                    case 1: response.status(200).send(RESPONSES.NULL_PARAMS); break;
-                    case 2: response.status(200).send(RESPONSES.USER_FOUND); break;
-                    default: response.status(200).send(RESPONSES.UNKNOWN_ERROR); break;
-                }
-
-            });
-        
-        } else if (action === "update") {
-
-            updateUserlinks(mongoClient, username, lightMode, socialLinks, links).then((
-                updateLinksResult
-            ) => {
-
-                switch (updateLinksResult) {
-                    case 0: response.status(200).send(RESPONSES.ACTION_COMPLETED); break;
-                    case 1: response.status(200).send(RESPONSES.NULL_PARAMS); break;
-                    case 2: response.status(200).send(RESPONSES.USER_NOT_FOUND); break;
-                    default: response.status(200).send(RESPONSES.UNKNOWN_ERROR); break;
-                }
-
-            });
-
-        } else if (action === "delete") {
-            deleteUserlinks(mongoClient, username).then((
-                deleteLinksResult
-            ) => {
-                switch (deleteLinksResult) {
-                    case 0: response.status(200).send(RESPONSES.ACTION_COMPLETED); break;
-                    case 1: response.status(200).send(RESPONSES.USER_NOT_FOUND); break;
-                }
-            })
-        }
-        else response.status(200).send(RESPONSES.INVALID_ACTION);
-
-    } else response.status(200).send(RESPONSES.INVALID_COLLECTION);
 
 });
 
