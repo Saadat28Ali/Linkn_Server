@@ -43,8 +43,8 @@ app.post("/", bodyParser.json(), (request, response) => {
 
     const action = request.body.action;
     const collection = request.body.collection;
-    const username = request.body.uname;
-    const password = request.body.pwd;
+    const username = request.body.username;
+    const password = request.body.password;
     const data = request.body.data;
     const lightMode = request.body.lightMode;
     const socialLinks = request.body.socialLinks;
