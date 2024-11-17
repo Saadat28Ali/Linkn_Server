@@ -1,3 +1,15 @@
+function getTimeFromDate(dateObj) {
+    return {
+        year: dateObj.getFullYear(), 
+        month: dateObj.getMonth() + 1, 
+        date: dateObj.getDate(), 
+        hours: dateObj.getHours(), 
+        minutes: dateObj.getMinutes(), 
+        seconds: dateObj.getSeconds(), 
+        milliseconds: dateObj.getMilliseconds()
+    };
+}
+
 function getCurrentTime() {
     const dateObj = new Date();
     const currentTime = {
@@ -127,6 +139,7 @@ function getValidTime(time) {
 }
 
 export {
+    getTimeFromDate, 
     getCurrentTime, 
     getTimestamp, 
     getLaterTime, 

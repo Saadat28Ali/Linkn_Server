@@ -8,6 +8,7 @@ import bodyParser from "body-parser";
 import { readUserData, writeUserData, updateUserData, deleteUserData } from "./users/usersCrud.js";
 import { readUserlinks, writeUserlinks, updateUserlinks, deleteUserlinks } from "./userlinks/userlinksCrud.js";
 import { createToken, findToken, updateToken } from "./sessiontokens/sessiontokens.js";
+import { writeImage, readImage } from "./images/images.js";
 
 // ----------------------------------------------
 
@@ -39,7 +40,7 @@ const app = express();
 
 app.use(express.static("public"));
 
-app.post("/", bodyParser.json(), (request, response) => {
+app.post("/", bodyParser.json({limit: "50mb"}), (request, response) => {
 
     const action = request.body.action;
     const collection = request.body.collection;
@@ -50,6 +51,9 @@ app.post("/", bodyParser.json(), (request, response) => {
     const socialLinks = request.body.socialLinks;
     const links = request.body.links;
     const ip = request.body.ip;
+
+    const image = request.body.image;
+    const descriptor = request.body.descriptor;
     
     const sessiontoken = request.body.token;
 
@@ -79,6 +83,32 @@ app.post("/", bodyParser.json(), (request, response) => {
                 else response.status(200).send(RESPONSES.ACTION_COMPLETED);
             }
         );
+    } 
+    
+    else if (action === "uploadimage") {
+
+        writeImage(mongoClient, username, descriptor, image).then((
+            writeImageResult
+        ) => {
+
+            if (writeImageResult === 1) response.send(RESPONSES.NULL_PARAMS);
+            else if (writeImageResult === 0) response.send(RESPONSES.ACTION_COMPLETED);
+            else response.send(RESPONSES.UNKNOWN_ERROR);
+
+        });
+
+    } else if (action === "downloadimage") {
+        
+        readImage(mongoClient, username, descriptor).then((
+            readImageResult
+        ) => {
+
+            if (readImageResult === 1) response.status(200).send(RESPONSES.NULL_PARAMS);
+            else if (readImageResult === 2) response.status(200).send(RESPONSES.USER_NOT_FOUND);
+            else response.status(200).send(readImageResult);
+
+        });
+
     } else {
         if (collection === "users") {
 
