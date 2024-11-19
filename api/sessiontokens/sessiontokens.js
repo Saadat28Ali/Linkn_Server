@@ -27,19 +27,19 @@ import {
 //     }
 // }
 
-async function findToken(mongoClient, username) {
+async function findToken(mongoClient, hashedToken) {
     
     // Returns 1 if null params
     // found token if a token with given username
     // is found
     // 2 if no such token is found
     
-    if (username === null) return 1;
+    if (hashedToken === null) return 1;
 
     try {
         await mongoClient.connect();
 
-        const foundToken = await mongoClient.db(process.env.DB_NAME).collection(process.env.SESSIONTOKENS_COLLECTION_NAME).findOne({ username: username }, { projection: { _id: 0 } });
+        const foundToken = await mongoClient.db(process.env.DB_NAME).collection(process.env.SESSIONTOKENS_COLLECTION_NAME).findOne({ hashed: hashedToken }, { projection: { _id: 0 } });
         return ((foundToken === null) ? 2 : foundToken);
     } finally {
         await mongoClient.close();
@@ -55,7 +55,9 @@ async function createToken(mongoClient, username, ip) {
     if (username === null) return 1;
     if (ip === null) return 1;
 
-    if (findToken(mongoClient, username) !== 2) return 2;
+    const findTokenResult = await findToken(mongoClient, username);
+    if (findTokenResult === 1) return 1;
+    if (findTokenResult !== 2) return 2;
 
     const currentTime = getCurrentTime();
     const token = {

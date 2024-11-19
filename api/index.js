@@ -50,23 +50,26 @@ app.post("/", bodyParser.json({limit: "50mb"}), (request, response) => {
     const lightMode = request.body.lightMode;
     const socialLinks = request.body.socialLinks;
     const links = request.body.links;
-    const ip = request.body.ip;
+    const ip = request.ip;
 
     const image = request.body.image;
     const descriptor = request.body.descriptor;
     
     const sessiontoken = request.body.token;
 
+    console.log("Request received with action: " + action);
+
     if (action === "requesttoken") {
         createToken(mongoClient, username, ip).then(
             (tokenCreatedResult) => {
+                console.log(tokenCreatedResult);
                 if (tokenCreatedResult === 1) response.status(200).send(RESPONSES.NULL_PARAMS);
                 else if (tokenCreatedResult === 2) response.status(200).send(RESPONSES.USER_FOUND);
                 else response.status(200).send(tokenCreatedResult);
             }
         );
     } else if (action === "findtoken") {
-        findToken(mongoClient, username).then(
+        findToken(mongoClient, sessiontoken).then(
             (tokenFoundResult) => {
                     if (tokenFoundResult === 1) response.status(200).send(RESPONSES.NULL_PARAMS);
                     else if (tokenFoundResult === 2) response.status(200).send(RESPONSES.USER_NOT_FOUND);
@@ -232,7 +235,6 @@ app.post("/", bodyParser.json({limit: "50mb"}), (request, response) => {
 });
 
 app.get("/", (request, response) => {
-
     response.send("The server is working");
 });
 
