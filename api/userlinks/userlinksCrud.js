@@ -18,7 +18,6 @@ async function writeUserlinks(mongoClient, username) {
     // 2: userlinks exists
 
     if (username === undefined || username === null) return 1;
-    const lightMode = false;
     const socialLinks = {};
     const links = [];
 
@@ -29,7 +28,6 @@ async function writeUserlinks(mongoClient, username) {
             await mongoClient.db(process.env.DB_NAME).collection(process.env.USERLINKS_COLLECTION_NAME).insertOne(
                 {
                     username: username, 
-                    lightMode: lightMode, 
                     socialLinks: socialLinks, 
                     links: links
                 }
@@ -63,7 +61,7 @@ async function deleteUserlinks(mongoClient, username) {
     }
 }
 
-async function updateUserlinks(mongoClient, username, lightMode, socialLinks, links) {
+async function updateUserlinks(mongoClient, username, socialLinks, links) {
     
     // Returns ----------------------------------
     // 0: if updated successfully
@@ -71,7 +69,6 @@ async function updateUserlinks(mongoClient, username, lightMode, socialLinks, li
     // 2: user does not exist
     
     if (username === undefined || username === null) return 1;
-    if (lightMode === undefined || lightMode === null) return 1;
     if (socialLinks === undefined || socialLinks === null) return 1;
     if (links === undefined || links === null) return 1;
 
@@ -82,7 +79,6 @@ async function updateUserlinks(mongoClient, username, lightMode, socialLinks, li
                 { username: username }, 
                 { $set: 
                     { 
-                        lightMode: lightMode, 
                         socialLinks: socialLinks, 
                         links: links
                     } 

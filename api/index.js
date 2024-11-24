@@ -44,12 +44,15 @@ app.post("/", bodyParser.json({limit: "50mb"}), (request, response) => {
 
     const action = request.body.action;
     const collection = request.body.collection;
+
     const username = request.body.username;
     const password = request.body.password;
-    const data = request.body.data;
+
     const lightMode = request.body.lightMode;
+    
     const socialLinks = request.body.socialLinks;
     const links = request.body.links;
+    
     const ip = request.ip;
 
     const image = request.body.image;
@@ -128,7 +131,7 @@ app.post("/", bodyParser.json({limit: "50mb"}), (request, response) => {
     
             } else if (action === "write") {
     
-                writeUserData(mongoClient, username, password, data).then((
+                writeUserData(mongoClient, username, password, lightMode).then((
                     writtenResult            
                 ) => {
     
@@ -143,7 +146,7 @@ app.post("/", bodyParser.json({limit: "50mb"}), (request, response) => {
     
             } else if (action === "update") {
     
-                updateUserData(mongoClient, username, password, data).then((
+                updateUserData(mongoClient, username, password, lightMode).then((
                     updateResult
                 ) => {
     
@@ -203,7 +206,7 @@ app.post("/", bodyParser.json({limit: "50mb"}), (request, response) => {
             
             } else if (action === "update") {
     
-                updateUserlinks(mongoClient, username, lightMode, socialLinks, links).then((
+                updateUserlinks(mongoClient, username, socialLinks, links).then((
                     updateLinksResult
                 ) => {
     

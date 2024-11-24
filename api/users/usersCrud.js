@@ -1,4 +1,4 @@
-async function writeUserData(mongoClient, username, password, data) {
+async function writeUserData(mongoClient, username, password, lightMode) {
     // Returns ----------------------------------
     // 0: new user data added
     // 1: null params found
@@ -6,7 +6,7 @@ async function writeUserData(mongoClient, username, password, data) {
 
     if (username === undefined || username === null) return 1;
     if (password === undefined || password === null) return 1;
-    if (data === undefined || data === null) return 1;
+    if (lightMode === undefined || lightMode === null) return 1;
 
     if (await readUserData(mongoClient, username) === 1) {
         try {
@@ -16,7 +16,7 @@ async function writeUserData(mongoClient, username, password, data) {
                 {
                     username: username, 
                     password: password, 
-                    data: data
+                    lightMode: lightMode
                 }
             );
             return 0;
@@ -43,7 +43,7 @@ async function readUserData(mongoClient, username) {
     }
 }
 
-async function updateUserData(mongoClient, username, password, data) {
+async function updateUserData(mongoClient, username, password, lightMode) {
     // Returns ----------------------------------
     // 0: if updated successfully
     // 1: if null params are passed
@@ -51,12 +51,12 @@ async function updateUserData(mongoClient, username, password, data) {
     
     if (username === undefined || username === null) return 1;
     if (password === undefined || password === null) return 1;
-    if (data === undefined || data === null) return 1;
+    if (lightMode === undefined || lightMode === null) return 1;
 
     if (await readUserData(mongoClient, username) !== 1) {
         try {
             await mongoClient.connect();
-            await mongoClient.db(process.env.DB_NAME).collection(process.env.USERS_COLLECTION_NAME).updateOne({ username: username }, { $set: { password: password, data: data } });
+            await mongoClient.db(process.env.DB_NAME).collection(process.env.USERS_COLLECTION_NAME).updateOne({ username: username }, { $set: { password: password, lightMode: lightMode } });
             return 0;
         } finally {
             await mongoClient.close();
