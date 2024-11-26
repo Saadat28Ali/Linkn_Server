@@ -55,18 +55,24 @@ async function createToken(mongoClient, username, ip) {
     if (username === null) return 1;
     if (ip === null) return 1;
 
-    const findTokenResult = await findToken(mongoClient, username);
-    if (![1, 2].includes(findTokenResult)) {
-        // token has been found
-        return 2;
-    } else {
-        if (findTokenResult === 1) {
-            // null params were found 
-            return 1;
-        } else if (findTokenResult === 2) {
-            // no pre existing token found
+    // Finding token using the username 
+
+    try {
+        await mongoClient.connect();
+
+        const foundToken = await mongoClient.db(process.env.DB_NAME).collection(process.env.SESSIONTOKENS_COLLECTION_NAME).findOne({ username: username });
+        if (foundToken === null) {
+            // no token found
+        } else {
+            // token found
+            return foundToken.hashed;
         }
+    } finally {
+        await mongoClient.close();
     }
+
+    // No token was found for the given username
+    // so a new token is being created
 
     const currentTime = getCurrentTime();
     const token = {
