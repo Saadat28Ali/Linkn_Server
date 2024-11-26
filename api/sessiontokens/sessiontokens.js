@@ -56,8 +56,17 @@ async function createToken(mongoClient, username, ip) {
     if (ip === null) return 1;
 
     const findTokenResult = await findToken(mongoClient, username);
-    if (findTokenResult === 1) return 1;
-    if (findTokenResult !== 2) return 2;
+    if (![1, 2].includes(findTokenResult)) {
+        // token has been found
+        return 2;
+    } else {
+        if (findTokenResult === 1) {
+            // null params were found 
+            return 1;
+        } else if (findTokenResult === 2) {
+            // no pre existing token found
+        }
+    }
 
     const currentTime = getCurrentTime();
     const token = {
