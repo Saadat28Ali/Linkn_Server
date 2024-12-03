@@ -13,20 +13,6 @@ import {
     getValidTime
 } from "../time/time.js";
 
-// async function dehashToken(mongoClient, token) {
-
-//     if (token === null) return 1;
-
-//     try {
-//         await mongoClient.connect();
-
-//         const foundToken = await mongoClient.db(process.env.DB_NAME).collection(process.env.SESSIONTOKENS_COLLECTION_NAME).findOne({ key: token }, { projection: { _id: 0, key: 0 } });
-//         return ((foundToken !== null) ? foundToken.value : 2);
-//     } finally {
-//         await mongoClient.close();
-//     }
-// }
-
 async function findToken(mongoClient, hashedToken) {
     
     // Returns 1 if null params
@@ -97,7 +83,6 @@ async function updateToken(mongoClient, username, ip) {
     // Returns 1 if null params
     // Returns 2 if user does not exist
     // Returns 0 if successful updation
-    
 
     if (username === null) return 1;
 

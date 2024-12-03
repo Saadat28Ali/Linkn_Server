@@ -50,6 +50,7 @@ app.post("/", bodyParser.json({limit: "50mb"}), (request, response) => {
 
     const lightMode = request.body.lightMode;
     
+    const subtext = request.body.subtext;
     const socialLinks = request.body.socialLinks;
     const links = request.body.links;
     
@@ -206,7 +207,7 @@ app.post("/", bodyParser.json({limit: "50mb"}), (request, response) => {
             
             } else if (action === "update") {
     
-                updateUserlinks(mongoClient, username, socialLinks, links).then((
+                updateUserlinks(mongoClient, username, subtext, socialLinks, links).then((
                     updateLinksResult
                 ) => {
     

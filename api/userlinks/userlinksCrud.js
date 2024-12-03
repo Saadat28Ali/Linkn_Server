@@ -61,7 +61,7 @@ async function deleteUserlinks(mongoClient, username) {
     }
 }
 
-async function updateUserlinks(mongoClient, username, socialLinks, links) {
+async function updateUserlinks(mongoClient, username, subtext, socialLinks, links) {
     
     // Returns ----------------------------------
     // 0: if updated successfully
@@ -69,6 +69,7 @@ async function updateUserlinks(mongoClient, username, socialLinks, links) {
     // 2: user does not exist
     
     if (username === undefined || username === null) return 1;
+    if (subtext === undefined || subtext === null) return 1;
     if (socialLinks === undefined || socialLinks === null) return 1;
     if (links === undefined || links === null) return 1;
 
@@ -80,8 +81,9 @@ async function updateUserlinks(mongoClient, username, socialLinks, links) {
                 { $set: 
                     { 
                         socialLinks: socialLinks, 
-                        links: links
-                    } 
+                        links: links, 
+                        subtext: subtext
+                    }
                 }
             );
             return 0;
